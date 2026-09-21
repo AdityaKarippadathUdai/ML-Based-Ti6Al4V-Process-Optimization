@@ -430,51 +430,428 @@ However, an observation appearing as an outlier does **not automatically mean th
 In experimental materials-science datasets, extreme observations may represent legitimate processing conditions or material behavior.
 
 ---
+---
 
-# 🗂️ Project Structure
+# 🤖 Machine Learning Modeling
 
-A recommended project structure is:
+Following the exploratory data analysis, machine-learning regression models were developed to investigate the relationship between the LPBF input parameters and the resulting mechanical properties of Ti6Al4V.
+
+The eight input variables used for prediction are:
 
 ```text
-ML-Ti6Al4V-Process-Optimization/
-│
-├── 📓 ML_Based_Ti6Al4V_Process_Optimization.ipynb
-│
-├── 📊 data/
-│   └── 1-s2.0-S2214860424003877-mmc1.xlsx
-│
-├── 📁 notebooks/
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_data_preprocessing.ipynb
-│   ├── 03_feature_analysis.ipynb
-│   ├── 04_machine_learning.ipynb
-│   └── 05_optimization.ipynb
-│
-├── 📁 src/
-│   ├── preprocessing.py
-│   ├── feature_engineering.py
-│   ├── models.py
-│   ├── evaluation.py
-│   └── optimization.py
-│
-├── 📁 models/
-│   └── trained_models/
-│
-├── 📁 results/
-│   ├── figures/
-│   ├── tables/
-│   └── predictions/
-│
-├── 📁 reports/
-│
-├── 📄 requirements.txt
-├── 📄 README.md
-└── 📄 LICENSE
+Powder Size
+Laser Spot
+Laser Power
+Scanning Speed
+Hatch Distance
+Layer Thickness
+Gauge Area
+Gauge Length
 ```
 
-The current repository can remain simpler while the project is in the EDA stage.
+The three prediction targets are:
+
+```text
+UTS (MPa)
+YS (MPa)
+EF (%)
+```
+
+The dataset contains **173 experimental observations**.
+
+The current modeling stage uses an **80/20 train-test split** with a fixed random state to provide a reproducible baseline comparison.
+
+```text
+173 Samples
+     │
+     ▼
+┌─────────────────────┐
+│ 8 Input Features    │
+└──────────┬──────────┘
+           │
+           ▼
+     Train / Test Split
+           │
+      ┌────┴────┐
+      ▼         ▼
+   80% Train  20% Test
+      │         │
+      ▼         ▼
+   ML Models  Evaluation
+```
 
 ---
+
+# 🧠 Regression Models
+
+Four regression algorithms are currently implemented.
+
+### 1. Gaussian Process Regression (GPR)
+
+Gaussian Process Regression is a non-parametric regression method capable of modeling nonlinear relationships.
+
+In this project, feature standardization is applied before GPR.
+
+GPR is used to predict:
+
+```text
+Process Parameters ─────► UTS
+Process Parameters ─────► YS
+Process Parameters ─────► EF
+```
+
+---
+
+### 2. Support Vector Regression (SVR)
+
+Support Vector Regression is used to model nonlinear relationships between LPBF parameters and mechanical properties.
+
+An RBF kernel is used for the current implementation.
+
+The model uses standardized input features.
+
+---
+
+### 3. Random Forest Regression
+
+Random Forest Regression combines multiple decision trees to model nonlinear relationships between the input parameters and mechanical properties.
+
+The current implementation uses:
+
+```text
+Number of trees : 300
+Random state    : 42
+```
+
+Random Forest is particularly useful for examining nonlinear feature relationships and provides feature-importance estimates.
+
+---
+
+### 4. XGBoost Regression
+
+XGBoost is included as an additional machine-learning benchmark.
+
+The current implementation uses gradient-boosted decision trees with parameters including:
+
+```text
+n_estimators      = 300
+max_depth         = 6
+learning_rate     = 0.05
+subsample         = 0.8
+colsample_bytree  = 0.8
+```
+
+XGBoost is not one of the three regression algorithms specifically described in the paper's CIRM methodology; it is included here as an additional model for comparison.
+
+---
+
+# 📊 Model Evaluation
+
+The models are evaluated using three regression metrics.
+
+## R² — Coefficient of Determination
+
+R² measures the proportion of variation in the target variable explained by the model.
+
+Higher values indicate that the model explains more of the observed variation on the evaluation data.
+
+---
+
+## RMSE — Root Mean Squared Error
+
+RMSE measures the magnitude of prediction errors while giving greater weight to larger errors.
+
+```text
+RMSE = √(mean((y_actual - y_predicted)²))
+```
+
+Lower values indicate smaller prediction errors.
+
+---
+
+## MAE — Mean Absolute Error
+
+MAE measures the average absolute difference between actual and predicted values.
+
+```text
+MAE = mean(|y_actual - y_predicted|)
+```
+
+Lower values indicate smaller average prediction errors.
+
+---
+
+# 📈 Current Model Results
+
+Using the current 80/20 train-test split, the Random Forest model produced the following R² values:
+
+| Target | Model         |     R² |
+| ------ | ------------- | -----: |
+| UTS    | Random Forest | 0.7172 |
+| YS     | Random Forest | 0.6473 |
+| EF     | Random Forest | 0.5653 |
+
+These values represent the current baseline results obtained from the implemented train-test split.
+
+The complete comparison includes:
+
+```text
+                 ┌─────────────┐
+                 │     GPR     │
+                 └──────┬──────┘
+                        │
+                 ┌──────▼──────┐
+                 │     SVR     │
+                 └──────┬──────┘
+                        │
+                 ┌──────▼──────┐
+                 │ Random Forest│
+                 └──────┬──────┘
+                        │
+                 ┌──────▼──────┐
+                 │   XGBoost   │
+                 └──────┬──────┘
+                        │
+                        ▼
+               Model Comparison
+                        │
+             ┌──────────┼──────────┐
+             ▼          ▼          ▼
+            UTS        YS          EF
+```
+
+The notebook generates comparison tables and plots for R², RMSE, and MAE.
+
+---
+
+# 📊 R² Model Comparison
+
+A grouped bar chart is generated to compare the R² values obtained by:
+
+* GPR
+* SVR
+* Random Forest
+* XGBoost
+
+for:
+
+* UTS
+* YS
+* EF
+
+This provides a direct visual comparison of model performance across the three mechanical properties.
+
+---
+
+# 📉 RMSE and MAE Comparison
+
+RMSE and MAE plots are also generated to examine prediction error.
+
+The models are therefore evaluated from multiple perspectives rather than using R² alone.
+
+```text
+                  Model Evaluation
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+         R²             RMSE           MAE
+          │              │              │
+          ▼              ▼              ▼
+      Explained       Prediction      Average
+      variance          error          error
+```
+
+---
+
+# 🎯 Actual vs Predicted Analysis
+
+Actual-versus-predicted plots are generated for each model and target.
+
+The plots compare:
+
+```text
+Actual Experimental Value
+          │
+          │
+          │       •
+          │    •
+          │  •
+          │ •
+          └──────────────────►
+             Predicted Value
+```
+
+A reference diagonal line represents:
+
+```text
+Predicted = Actual
+```
+
+Points closer to this line indicate smaller prediction differences.
+
+Separate plots are generated for:
+
+```text
+GPR
+ ├── UTS
+ ├── YS
+ └── EF
+
+SVR
+ ├── UTS
+ ├── YS
+ └── EF
+
+Random Forest
+ ├── UTS
+ ├── YS
+ └── EF
+
+XGBoost
+ ├── UTS
+ ├── YS
+ └── EF
+```
+
+---
+
+# 🔬 XGBoost Feature Importance
+
+XGBoost feature importance is also calculated to investigate the relative contribution of the eight input variables to the predictions.
+
+The analysis considers:
+
+```text
+Powder Size
+Laser Spot
+Laser Power
+Scanning Speed
+Hatch Distance
+Layer Thickness
+Gauge Area
+Gauge Length
+```
+
+Feature-importance plots are generated separately for:
+
+* UTS
+* YS
+* EF
+
+These plots provide an initial model-based interpretation of which input variables contribute most strongly to the predictions.
+
+Feature importance should not automatically be interpreted as a causal physical relationship. Further analysis is required to distinguish predictive association from physical causation.
+
+---
+
+# ⚠️ Current ML Limitations
+
+The current ML results should be considered a **baseline model comparison** rather than final research conclusions.
+
+Important considerations include:
+
+### Dataset Size
+
+The dataset contains only 173 observations. This is relatively small for training complex machine-learning models.
+
+### Train-Test Split
+
+The current results use a single 80/20 train-test split.
+
+Therefore, the reported R², RMSE, and MAE values can depend on the particular samples assigned to the test set.
+
+### Experimental References
+
+The observations originate from multiple experimental references.
+
+Differences between studies may include:
+
+* Experimental equipment
+* Processing conditions
+* Material conditions
+* Specimen geometry
+* Measurement procedures
+
+Group-aware validation based on the `Reference` column should therefore be investigated in a later stage.
+
+### Model Comparison
+
+The current comparison is intended to establish a baseline between several regression algorithms.
+
+Hyperparameter optimization and cross-validation have not yet been used to establish final model performance.
+
+---
+
+# 🔬 Relationship to the Research Paper
+
+The research paper uses a **Clustering Integrated Regression Model (CIRM)** involving:
+
+```text
+K-Means Clustering
+       │
+       ▼
+ ┌─────┼─────┐
+ ▼     ▼     ▼
+GPR   SVR    RF
+```
+
+The paper reports the use of K-Means clustering followed by GPR, SVR, and Random Forest regression.
+
+The current notebook first implements the regression models independently to establish baseline performance.
+
+XGBoost has additionally been included as an experimental benchmark and is **not part of the paper's reported CIRM regression model set**.
+
+The next stage can therefore investigate whether integrating K-Means clustering with the regression models changes prediction performance.
+
+---
+
+# 🚀 Next Machine-Learning Stage
+
+The planned next stage is to extend the baseline models into the clustering-based framework:
+
+```text
+                 Dataset
+                    │
+                    ▼
+             Standardization
+                    │
+                    ▼
+             K-Means Clustering
+                    │
+             ┌──────┼──────┐
+             ▼      ▼      ▼
+          Cluster Cluster Cluster
+             1      2      3
+             │      │      │
+             └──────┼──────┘
+                    ▼
+          ┌─────────────────┐
+          │ GPR / SVR / RF  │
+          │ per cluster     │
+          └────────┬────────┘
+                   │
+                   ▼
+             Model Evaluation
+                   │
+                   ▼
+            UTS / YS / EF
+```
+
+Following this, the project can investigate:
+
+* Hyperparameter tuning
+* Cross-validation
+* SHAP-based model interpretation
+* Feature interaction analysis
+* Multi-objective optimization
+* NSGA-II optimization
+* Comparison with experimental observations
+
+The final optimization stage should only be performed after establishing an appropriate validation strategy for the predictive models.
+
+---
+
+
 
 # 🛠️ Technologies Used
 
