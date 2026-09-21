@@ -742,6 +742,149 @@ These plots provide an initial model-based interpretation of which input variabl
 
 Feature importance should not automatically be interpreted as a causal physical relationship. Further analysis is required to distinguish predictive association from physical causation.
 
+## 🧩 GMM-Based Clustering and Modeling
+
+To investigate whether a probabilistic clustering approach could better represent the heterogeneous LPBF processing conditions, a **Gaussian Mixture Model (GMM)** was introduced as an alternative to the K-Means clustering used in the original research methodology.
+
+### Gaussian Mixture Model
+
+GMM is a probabilistic clustering method that represents the dataset as a mixture of Gaussian distributions. Unlike K-Means, which assigns each sample to a single cluster based primarily on distance to a cluster centroid, GMM estimates the probability that each sample belongs to each cluster.
+
+For this project, the eight LPBF input parameters were standardized before applying GMM.
+
+**Number of clusters:**
+
+```text
+k = 3
+```
+
+The three-cluster configuration was selected to provide a direct comparison with the clustering structure used in the reference study.
+
+### GMM Workflow
+
+```text
+Ti6Al4V Dataset
+      │
+      ▼
+Feature Selection
+      │
+      ▼
+Standardization
+      │
+      ▼
+Gaussian Mixture Model
+      │
+      ├── Cluster 0
+      ├── Cluster 1
+      └── Cluster 2
+      │
+      ▼
+Cluster-Specific Models
+      │
+      ├── GPR
+      ├── SVR
+      └── Random Forest
+      │
+      ▼
+Predictions
+      │
+      ▼
+Performance Evaluation
+      │
+      ├── R²
+      ├── RMSE
+      └── MAE
+```
+
+### Why GMM Was Investigated
+
+GMM was tested because LPBF process data may contain overlapping groups of processing conditions. GMM can represent clusters using their estimated means and covariance structures and provides **soft cluster assignments** through membership probabilities.
+
+This makes it possible to investigate whether probabilistic clustering can improve the prediction of mechanical properties compared with:
+
+1. Global regression models without clustering.
+2. K-Means-based clustering.
+3. GMM-based clustering.
+
+### GMM Configuration
+
+The following configuration was used:
+
+| Parameter                  | Value                  |
+| -------------------------- | ---------------------- |
+| Clustering algorithm       | Gaussian Mixture Model |
+| Number of components       | 3                      |
+| Covariance type            | Full                   |
+| Initialization repetitions | 20                     |
+| Random state               | 42                     |
+| Feature preprocessing      | StandardScaler         |
+| Input features             | 8 LPBF parameters      |
+
+### Cluster-Specific Regression
+
+After clustering, separate regression models were trained within each GMM cluster.
+
+The models investigated were:
+
+* **Gaussian Process Regression (GPR)**
+* **Support Vector Regression (SVR)**
+* **Random Forest Regression**
+
+The models were trained independently for each mechanical-property target:
+
+* **Ultimate Tensile Strength (UTS)**
+* **Yield Strength (YS)**
+* **Elongation to Failure (EF)**
+
+The performance of the resulting cluster-specific models was evaluated on the held-out test set using:
+
+* **R²** — coefficient of determination
+* **RMSE** — root mean squared error
+* **MAE** — mean absolute error
+
+### GMM vs Global Models
+
+The GMM approach is treated as an experimental extension of the baseline modeling pipeline.
+
+The comparison is structured as:
+
+| Approach              | Clustering | Regression               |
+| --------------------- | ---------- | ------------------------ |
+| Global baseline       | None       | GPR / SVR / RF / XGBoost |
+| Reference methodology | K-Means    | GPR / SVR / RF           |
+| Proposed experiment   | GMM        | GPR / SVR / RF           |
+
+The objective is to determine whether introducing probabilistic clustering improves prediction performance for the Ti6Al4V mechanical-property targets.
+
+### Important Methodological Note
+
+The reference research paper uses **K-Means clustering with three clusters** as part of its CIRM methodology. The GMM implementation in this project is therefore an **additional experimental approach**, rather than an exact reproduction of the paper's CIRM methodology.
+
+GMM results will be compared using the same evaluation metrics and held-out test data to determine whether the clustering approach provides measurable predictive improvement.
+
+### Current Status
+
+🟢 **Completed**
+
+* GMM implementation
+* Three-component clustering
+* Feature standardization
+* Cluster assignment
+* Cluster-specific GPR
+* Cluster-specific SVR
+* Cluster-specific Random Forest
+* R², RMSE and MAE evaluation
+* Comparison with global baseline models
+
+🟡 **Next Steps**
+
+* Compare GMM against K-Means
+* Hyperparameter tuning
+* Cross-validation
+* SHAP-based model interpretation
+* Investigate cluster characteristics
+* Multi-objective optimization using validated models
+
 ---
 
 # ⚠️ Current ML Limitations
